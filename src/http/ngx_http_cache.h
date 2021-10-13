@@ -24,6 +24,7 @@
 #define NGX_HTTP_CACHE_SCARCE        8
 
 #define NGX_HTTP_CACHE_KEY_LEN       16
+#define NGX_HTTP_CACHE_HEX_KEY_LEN   32
 #define NGX_HTTP_CACHE_ETAG_LEN      128
 #define NGX_HTTP_CACHE_VARY_LEN      128
 

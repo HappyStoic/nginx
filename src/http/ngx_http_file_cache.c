@@ -537,6 +537,9 @@ ngx_http_file_cache_read(ngx_http_request_t *r, ngx_http_cache_t *c)
     ngx_http_file_cache_header_t  *h;
 
     n = ngx_http_file_cache_aio_read(r, c);
+ 
+    ngx_log_error(NGX_LOG_CRIT, r->connection->log, 0,
+                      "foo bar foo ... %s", c->file.name.data);
 
     if (n < 0) {
         return n;
@@ -1569,11 +1572,31 @@ ngx_http_cache_send(ngx_http_request_t *r)
     ngx_buf_t         *b;
     ngx_chain_t        out;
     ngx_http_cache_t  *c;
+    ngx_table_elt_t  *h;
 
     c = r->cache;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http file cache send: %s", c->file.name.data);
+
+    h = ngx_list_push(&r->headers_out.headers);
+    if (h == NULL) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    static const unsigned char table[] = "0123456789abcdef";
+    unsigned char hex_key[NGX_HTTP_CACHE_HEX_KEY_LEN+1];
+
+    /* Convert byte representation of key into hex string */
+    for (int i = 0; i < NGX_HTTP_CACHE_KEY_LEN; i++)
+    {
+        hex_key[ i*2     ] = table[c->key[i] >> 4];
+        hex_key[(i*2) + 1] = table[c->key[i] & 0x0f];
+    }
+    hex_key[NGX_HTTP_CACHE_HEX_KEY_LEN] = '\0';
+
+    ngx_str_set(&h->key, "X-Cache-Key");
+    ngx_str_set(&h->value, hex_key);
 
     if (r != r->main && c->length - c->body_start == 0) {
         return ngx_http_send_header(r);
